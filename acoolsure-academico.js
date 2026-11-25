@@ -315,6 +315,39 @@ const page = `
   </div>
 `;
 
+/* v5: responsive inline typography for Wix, using the original design scales. */
+function applyAcademicTypography(host) {
+  const root = host.shadowRoot;
+  const width = host.getBoundingClientRect().width;
+  if (!root || width <= 0) return;
+  const rem = parseFloat(getComputedStyle(host.ownerDocument.documentElement).fontSize) || 16;
+  const scale = (min, factor, max) => Math.min(max * rem, Math.max(min * rem, width * factor));
+  const display = '"Acoolsure Barlow", "Arial Narrow", Arial, sans-serif';
+  const set = (selector, size, line, family = display, weight = 800, style = 'normal') => {
+    root.querySelectorAll(selector).forEach(element => {
+      const values = { 'font-size': size, 'font-family': family, 'font-weight': String(weight), 'line-height': String(line), 'font-style': style };
+      for (const [key, val] of Object.entries(values)) {
+        if (element.style.getPropertyValue(key) !== val || element.style.getPropertyPriority(key) !== 'important') {
+          element.style.setProperty(key, val, 'important');
+        }
+      }
+    });
+  };
+  const px = n => n + 'px';
+  const hero = width <= 700 ? scale(3.5, .189, 7) : scale(5, .12, 13);
+  set('h1, h1 span, h1 i', px(hero), .77);
+  const section = scale(3.05, .076, 8.2);
+  set('h2:not(.brands h2)', px(section), .84);
+  set('h2 em', px(section * .76), .84, 'Georgia, serif', 400, 'italic');
+  set('.level-story h3', px(scale(2.15, .05, 5.4)), .94);
+  set('.program-copy h3, .english-items h3, .resource-grid h3', px(scale(1.68, .034, 3.2)), 1);
+  set('.english-count b', px(scale(5, .16, 12)), .76);
+  set('.brands h2', px(scale(1.4, .025, 2.25)), 1);
+  set('.marquee li', px(scale(2.25, .055, 5.5)), 1.05);
+  set('.score-top output', px(scale(2.8, .06, 6.2)), .86);
+  set('.close blockquote', px(scale(1.75, .04, 4.9)), 1.02, 'Georgia, serif', 400, 'italic');
+}
+
 class AcoolsureAcademico extends HTMLElement {
   static observedAttributes = ['top-offset', 'sections'];
 
@@ -324,6 +357,8 @@ class AcoolsureAcademico extends HTMLElement {
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
     if (!this.shadowRoot.firstChild) this.renderSections();
     this.setOffset();
+    this.setAttribute('data-acoolsure-version', 'v5');
+    applyAcademicTypography(this);
 
     const connection = new AbortController();
     this.connection = connection;
@@ -506,7 +541,10 @@ class AcoolsureAcademico extends HTMLElement {
     addEventListener('scroll', schedulePosition, { passive: true, signal });
     addEventListener('resize', schedulePosition, { passive: true, signal });
     preferences.addEventListener('change', schedulePosition, { signal });
-    const resize = new ResizeObserver(schedulePosition);
+    const resize = new ResizeObserver(() => {
+      applyAcademicTypography(this);
+      schedulePosition();
+    });
     resize.observe(this);
     if (map) resize.observe(map);
     if (metrics) resize.observe(metrics);
@@ -592,6 +630,7 @@ class AcoolsureAcademico extends HTMLElement {
       }
     }
     this.shadowRoot.replaceChildren(template.content);
+    applyAcademicTypography(this);
   }
 
   setOffset() {
